@@ -18,3 +18,4 @@ UnityEngine.*
 UserSettings/*
 obj/
 recording*
+*.sln

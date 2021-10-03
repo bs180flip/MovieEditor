@@ -676,30 +676,6 @@ namespace OpenCVForUnityExample
         }
 
         /// <summary>
-        /// Raises the play button click event.
-        /// </summary>
-        public void OnPlayButtonClick()
-        {
-            webCamTextureToMatHelper.Play();
-        }
-
-        /// <summary>
-        /// Raises the pause button click event.
-        /// </summary>
-        public void OnPauseButtonClick()
-        {
-            webCamTextureToMatHelper.Pause();
-        }
-
-        /// <summary>
-        /// Raises the stop button click event.
-        /// </summary>
-        public void OnStopButtonClick()
-        {
-            webCamTextureToMatHelper.Stop();
-        }
-
-        /// <summary>
         /// Raises the change camera button click event.
         /// </summary>
         public void OnChangeCameraButtonClick()
@@ -1228,11 +1204,6 @@ namespace OpenCVForUnityExample
 #endif
                 }
             }
-
-            if (_videoPlayer.isPlaying)
-            {
-                //gameObject.GetComponent<Renderer>().sharedMaterial.mainTexture = _videoPlayer.texture;
-            }
         }
 
 
@@ -1279,11 +1250,6 @@ namespace OpenCVForUnityExample
         }
 
         public Camera targetCamera;
-
-        // void Start()
-        // {
-        //     UpdateScale();
-        // }
 
         [ContextMenu("execute")]
         void UpdateScale()
@@ -1341,9 +1307,9 @@ namespace OpenCVForUnityExample
             // }
         }
 
-        public void Quit()
+        public void ReStart()
         {
-            Application.Quit();
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
     }
