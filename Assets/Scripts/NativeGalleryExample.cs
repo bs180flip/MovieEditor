@@ -155,7 +155,7 @@ namespace OpenCVForUnityExample
                        //    DisableObject.SetActive(false);
                        //    CanvasObject.SetActive(true);
                        VideoQuadObject.SetActive(true);
-                       //VideoQuadObject.GetComponent<VideoRecordingExample>().Init(getPath, toggleEnable);
+                       VideoQuadObject.GetComponent<VideoRecordingExample>().Init(getPath, toggleEnable, path);
 
                    }
                }, "Select a video");
@@ -168,7 +168,7 @@ namespace OpenCVForUnityExample
                 // DisableObject.SetActive(false);
                 // CanvasObject.SetActive(true);
                 VideoQuadObject.SetActive(true);
-                //VideoQuadObject.GetComponent<VideoRecordingExample>().Init("", toggleEnable);
+                VideoQuadObject.GetComponent<VideoRecordingExample>().Init("", toggleEnable);
             }
 
         }

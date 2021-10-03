@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using UnityEngine;
 using Object = UnityEngine.Object;
-#if !UNITY_EDITOR && ( UNITY_ANDROID || UNITY_IOS )
+#if UNITY_ANDROID || UNITY_IOS
 using NativeGalleryNamespace;
 #endif
 
@@ -42,6 +43,8 @@ public static class NativeGallery
 
 	public enum PermissionType { Read = 0, Write = 1 };
 	public enum Permission { Denied = 0, Granted = 1, ShouldAsk = 2 };
+
+	[Flags]
 	public enum MediaType { Image = 1, Video = 2, Audio = 4 };
 
 	// EXIF orientation: http://sylvana.net/jpegcrop/exif_orientation.html (indices are reordered)
@@ -305,9 +308,11 @@ public static class NativeGallery
 
 	public static bool CanSelectMultipleMediaTypesFromGallery()
 	{
-#if !UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_EDITOR
+		return true;
+#elif UNITY_ANDROID
 		return AJC.CallStatic<bool>( "CanSelectMultipleMediaTypes" );
-#elif !UNITY_EDITOR && UNITY_IOS
+#elif UNITY_IOS
 		return true;
 #else
 		return false;
@@ -380,7 +385,17 @@ public static class NativeGallery
 			extension = extension.Substring( 1 );
 		}
 
-#if !UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_EDITOR
+		extension = extension.ToLowerInvariant();
+		if( extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "gif" || extension == "bmp" || extension == "tiff" )
+			return MediaType.Image;
+		else if( extension == "mp4" || extension == "mov" || extension == "wav" || extension == "avi" )
+			return MediaType.Video;
+		else if( extension == "mp3" || extension == "aac" || extension == "flac" )
+			return MediaType.Audio;
+
+		return (MediaType) 0;
+#elif UNITY_ANDROID
 		string mime = AJC.CallStatic<string>( "GetMimeTypeFromExtension", extension.ToLowerInvariant() );
 		if( string.IsNullOrEmpty( mime ) )
 			return (MediaType) 0;
@@ -392,7 +407,7 @@ public static class NativeGallery
 			return MediaType.Audio;
 		else
 			return (MediaType) 0;
-#elif !UNITY_EDITOR && UNITY_IOS
+#elif UNITY_IOS
 		return (MediaType) _NativeGallery_GetMediaTypeFromExtension( extension.ToLowerInvariant() );
 #else
 		return (MediaType) 0;
@@ -535,9 +550,37 @@ public static class NativeGallery
 		Permission result = RequestPermission( PermissionType.Read );
 		if( result == Permission.Granted && !IsMediaPickerBusy() )
 		{
-#if !UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_EDITOR
+			System.Collections.Generic.List<string> editorFilters = new System.Collections.Generic.List<string>( 4 );
+
+			if( ( mediaType & MediaType.Image ) == MediaType.Image )
+			{
+				editorFilters.Add( "Image files" );
+				editorFilters.Add( "png,jpg,jpeg" );
+			}
+
+			if( ( mediaType & MediaType.Video ) == MediaType.Video )
+			{
+				editorFilters.Add( "Video files" );
+				editorFilters.Add( "mp4,mov,wav,avi" );
+			}
+
+			if( ( mediaType & MediaType.Audio ) == MediaType.Audio )
+			{
+				editorFilters.Add( "Audio files" );
+				editorFilters.Add( "mp3,aac,flac" );
+			}
+
+			editorFilters.Add( "All files" );
+			editorFilters.Add( "*" );
+
+			string pickedFile = UnityEditor.EditorUtility.OpenFilePanelWithFilters( "Select file", "", editorFilters.ToArray() );
+
+			if( callback != null )
+				callback( pickedFile != "" ? pickedFile : null );
+#elif UNITY_ANDROID
 			AJC.CallStatic( "PickMedia", Context, new NGMediaReceiveCallbackAndroid( callback, null ), (int) mediaType, false, SelectedMediaPath, mime, title );
-#elif !UNITY_EDITOR && UNITY_IOS
+#elif UNITY_IOS
 			if( mediaType == MediaType.Audio )
 			{
 				Debug.LogError( "Picking audio files is not supported on iOS" );
@@ -681,7 +724,7 @@ public static class NativeGallery
 		string loadPath = imagePath;
 #endif
 
-		String extension = Path.GetExtension( imagePath ).ToLowerInvariant();
+		string extension = Path.GetExtension( imagePath ).ToLowerInvariant();
 		TextureFormat format = ( extension == ".jpg" || extension == ".jpeg" ) ? TextureFormat.RGB24 : TextureFormat.RGBA32;
 
 		Texture2D result = new Texture2D( 2, 2, format, generateMipmaps, linearColorSpace );
@@ -764,7 +807,7 @@ public static class NativeGallery
 				mimeType = properties[2].Trim();
 				if( mimeType.Length == 0 )
 				{
-					String extension = Path.GetExtension( imagePath ).ToLowerInvariant();
+					string extension = Path.GetExtension( imagePath ).ToLowerInvariant();
 					if( extension == ".png" )
 						mimeType = "image/png";
 					else if( extension == ".jpg" || extension == ".jpeg" )
@@ -813,7 +856,7 @@ public static class NativeGallery
 					height = 0;
 				if( !long.TryParse( properties[2].Trim(), out duration ) )
 					duration = 0L;
-				if( !float.TryParse( properties[3].Trim(), out rotation ) )
+				if( !float.TryParse( properties[3].Trim().Replace( ',', '.' ), NumberStyles.Float, CultureInfo.InvariantCulture, out rotation ) )
 					rotation = 0f;
 			}
 		}

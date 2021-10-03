@@ -193,8 +193,10 @@ namespace OpenCVForUnityExample
         /// </summary>
         FpsMonitor fpsMonitor;
 
-        protected static readonly string LBP_CASCADE_FILENAME = "haarcascade_frontalface_alt_tree.xml";
+        string LBP_CASCADE_FILENAME = "haarcascade_frontalface_alt2.xml";
 
+
+        [SerializeField] GameObject videoPlayerObj = null;
         VideoPlayer _videoPlayer; // Video Playerゲームオブジェクトを入れ込み
 
         [SerializeField] Image image; // Video Playerゲームオブジェクトを入れ込み
@@ -233,176 +235,12 @@ namespace OpenCVForUnityExample
 
         ReplayCam replayCam = null;
 
-        //Use this for initialization
-        //         void Start()
-        //         {
-        //             exampleTitle = "[NatCorderWithOpenCVForUnity Example]";
-        //             exampleSceneTitle = "- Video Recording Example";
+        float trackingSize = 0.08f;
 
-        //             fpsMonitor = GetComponent<FpsMonitor>();
+        DeviceOrientation result;
 
-        //             webCamTextureToMatHelper = gameObject.GetComponent<WebCamTextureToMatHelper>();
-        //             int width, height;
-        //             Dimensions(requestedResolution, out width, out height);
-        //             webCamTextureToMatHelper.requestedWidth = width;
-        //             webCamTextureToMatHelper.requestedHeight = height;
-
-        // #if UNITY_ANDROID && !UNITY_EDITOR
-        //                     // Avoids the front camera low light issue that occurs in only some Android devices (e.g. Google Pixel, Pixel2).
-        //                     webCamTextureToMatHelper.avoidAndroidFrontCameraLowLightIssue = true;
-        // #endif
-        //             webCamTextureToMatHelper.Initialize();
-
-
-        //             //microphoneSource = gameObject.AddComponent<AudioSource>();
-        //             _videoPlayer = gameObject.GetComponent<VideoPlayer>();
-
-
-        //             comicFilter = new ComicFilter();
-
-        //             // Update GUI state
-        //             requestedResolutionDropdown.value = (int)requestedResolution;
-        //             containerDropdown.value = (int)container;
-        //             videoBitRateDropdown.value = Array.IndexOf(System.Enum.GetNames(typeof(VideoBitRatePreset)), videoBitRate.ToString());
-        //             audioBitRateDropdown.value = Array.IndexOf(System.Enum.GetNames(typeof(AudioBitRatePreset)), audioBitRate.ToString());
-        //             applyComicFilterToggle.isOn = applyComicFilter;
-        //             recordMicrophoneAudioToggle.isOn = recordMicrophoneAudio;
-        //         }
-
-        /// <summary>
-        /// Raises the webcam texture to mat helper initialized event.
-        /// </summary>
-        public void OnWebCamTextureToMatHelperInitialized()
-        {
-            Debug.Log("OnWebCamTextureToMatHelperInitialized");
-
-            Mat webCamTextureMat = webCamTextureToMatHelper.GetMat();
-
-            texture = new Texture2D(webCamTextureMat.cols(), webCamTextureMat.rows(), TextureFormat.RGBA32, false);
-
-#if !OPENCV_USE_UNSAFE_CODE
-            pixelBuffer = new byte[webCamTextureMat.cols() * webCamTextureMat.rows() * 4];
-#endif
-
-            gameObject.GetComponent<Renderer>().material.mainTexture = texture;
-
-            gameObject.transform.localScale = new Vector3(webCamTextureMat.cols(), webCamTextureMat.rows(), 1);
-            Debug.Log("Screen.width " + Screen.width + " Screen.height " + Screen.height + " Screen.orientation " + Screen.orientation);
-
-            if (fpsMonitor != null)
-            {
-                fpsMonitor.Add("width", webCamTextureToMatHelper.GetWidth().ToString());
-                fpsMonitor.Add("height", webCamTextureToMatHelper.GetHeight().ToString());
-                fpsMonitor.Add("isFrontFacing", webCamTextureToMatHelper.IsFrontFacing().ToString());
-                fpsMonitor.Add("rotate90Degree", webCamTextureToMatHelper.rotate90Degree.ToString());
-                fpsMonitor.Add("flipVertical", webCamTextureToMatHelper.flipVertical.ToString());
-                fpsMonitor.Add("flipHorizontal", webCamTextureToMatHelper.flipHorizontal.ToString());
-                fpsMonitor.Add("orientation", Screen.orientation.ToString());
-            }
-
-
-            float width = webCamTextureMat.width();
-            float height = webCamTextureMat.height();
-
-            float widthScale = (float)Screen.width / width;
-            float heightScale = (float)Screen.height / height;
-            if (widthScale < heightScale)
-            {
-                Camera.main.orthographicSize = (width * (float)Screen.height / (float)Screen.width) / 2;
-            }
-            else
-            {
-                Camera.main.orthographicSize = height / 2;
-            }
-        }
-
-        /// <summary>
-        /// Raises the webcam texture to mat helper disposed event.
-        /// </summary>
-        public void OnWebCamTextureToMatHelperDisposed()
-        {
-            Debug.Log("OnWebCamTextureToMatHelperDisposed");
-
-            CancelRecording();
-            StopVideo();
-
-            if (texture != null)
-            {
-                Texture2D.Destroy(texture);
-                texture = null;
-            }
-        }
-
-        /// <summary>
-        /// Raises the webcam texture to mat helper error occurred event.
-        /// </summary>
-        /// <param name="errorCode">Error code.</param>
-        public void OnWebCamTextureToMatHelperErrorOccurred(WebCamTextureToMatHelper.ErrorCode errorCode)
-        {
-            Debug.Log("OnWebCamTextureToMatHelperErrorOccurred " + errorCode);
-        }
-
-        //         // Update is called once per frame
-        //         void Update1()
-        //         {
-        //             if (webCamTextureToMatHelper.IsPlaying() && webCamTextureToMatHelper.DidUpdateThisFrame())
-        //             {
-
-        //                 Mat rgbaMat = webCamTextureToMatHelper.GetMat();
-
-        //                 if (applyComicFilter)
-        //                     comicFilter.Process(rgbaMat, rgbaMat);
-
-        //                 if (isVideoRecording && !isFinishWriting)
-        //                 {
-        //                     textPos.x = 5;
-        //                     textPos.y = rgbaMat.rows() - 70;
-        //                     Imgproc.putText(rgbaMat, exampleTitle, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                     textPos.y = rgbaMat.rows() - 50;
-        //                     Imgproc.putText(rgbaMat, exampleSceneTitle, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                     if (container == ContainerPreset.MP4 || container == ContainerPreset.HEVC)
-        //                     {
-        //                         textPos.y = rgbaMat.rows() - 30;
-        //                         Imgproc.putText(rgbaMat, settingInfo1, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                         textPos.y = rgbaMat.rows() - 10;
-        //                         Imgproc.putText(rgbaMat, settingInfo2, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                     }
-        //                     else if (container == ContainerPreset.GIF)
-        //                     {
-        //                         textPos.y = rgbaMat.rows() - 30;
-        //                         Imgproc.putText(rgbaMat, settingInfoGIF, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                     }
-        //                     else if (container == ContainerPreset.JPG)
-        //                     {
-        //                         textPos.y = rgbaMat.rows() - 30;
-        //                         Imgproc.putText(rgbaMat, settingInfoJPG, textPos, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, textColor, 1, Imgproc.LINE_AA, false);
-        //                     }
-        //                 }
-
-        //                 // Upload the image Mat data to the Texture2D.
-        //                 // (The internal processing of the fastMatToTexture method restore the image Mat data to Unity coordinate system)
-        //                 Utils.fastMatToTexture2D(rgbaMat, texture);
-
-        //                 // Record frames
-        //                 if (videoRecorder != null && (isVideoRecording && !isFinishWriting) && frameCount++ % recordEveryNthFrame == 0)
-        //                 {
-        // #if !OPENCV_USE_UNSAFE_CODE
-        //                     MatUtils.copyFromMat(rgbaMat, pixelBuffer);
-        //                     videoRecorder.CommitFrame(pixelBuffer, recordingClock.timestamp);
-        // #else
-        //                     unsafe
-        //                     {
-        //                         videoRecorder.CommitFrame((void*)rgbaMat.dataAddr(), recordingClock.timestamp);
-        //                     }
-        // #endif
-        //                 }
-        //             }
-
-        //             if (isVideoPlaying && _videoPlayer.isPlaying)
-        //             {
-        //                 gameObject.GetComponent<Renderer>().sharedMaterial.mainTexture = _videoPlayer.texture;
-        //             }
-        //         }
+        [SerializeField]
+        Dropdown cascadeDropDown = null;
 
         private async Task StartRecording()
         {
@@ -627,6 +465,8 @@ namespace OpenCVForUnityExample
 
             Debug.Log("PlayVideo ()");
 
+            _videoPlayer.Stop();
+
             isVideoPlaying = true;
 
             // Playback the video
@@ -653,6 +493,37 @@ namespace OpenCVForUnityExample
             HideAllVideoUI();
         }
 
+
+        private NativeGallery.ImageOrientation lastLoadedOrientation;
+
+
+        // Util
+        Texture2D RotateTexture(Texture2D originalTexture, bool clockwise)
+        {
+            Color32[] original = originalTexture.GetPixels32();
+            Color32[] rotated = new Color32[original.Length];
+            int w = originalTexture.width;
+            int h = originalTexture.height;
+
+            int iRotated, iOriginal;
+
+            for (int j = 0; j < h; ++j)
+            {
+                for (int i = 0; i < w; ++i)
+                {
+                    iRotated = (i + 1) * h - j - 1;
+                    iOriginal = clockwise ? original.Length - 1 - (j * w + i) : j * w + i;
+                    rotated[iRotated] = original[iOriginal];
+                }
+            }
+
+            Texture2D rotatedTexture = new Texture2D(h, w);
+            rotatedTexture.SetPixels32(rotated);
+            rotatedTexture.Apply();
+            return rotatedTexture;
+        }
+
+
         private void PrepareCompleted2(VideoPlayer vp)
         {
             vp.prepareCompleted -= PrepareCompleted;
@@ -667,6 +538,10 @@ namespace OpenCVForUnityExample
             //_videoPlayer = vp;
             _videoPlayer.prepareCompleted -= PrepareCompleted;
 
+
+            // Width = (int)_videoPlayer.texture.width;
+            // Height = (int)_videoPlayer.texture.height;
+
             Width = (int)_videoPlayer.texture.width;
             Height = (int)_videoPlayer.texture.height;
 
@@ -674,7 +549,6 @@ namespace OpenCVForUnityExample
             videoTexture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
             rgbaMat = new Mat(Height, Width, CvType.CV_8UC4);
             grayMat = new Mat(Height, Width, CvType.CV_8UC1);
-
 
 #if !OPENCV_USE_UNSAFE_CODE
             pixelBuffer = new byte[rgbaMat.cols() * rgbaMat.rows() * 4];
@@ -691,7 +565,7 @@ namespace OpenCVForUnityExample
 
             Debug.Log("読み込み完了");
 
-            //webCamTextureToMatHelper.Pause();
+            UpdateScale();
         }
 
         private void EndReached(VideoPlayer vp)
@@ -848,6 +722,23 @@ namespace OpenCVForUnityExample
                 webCamTextureToMatHelper.Initialize(width, height);
             }
         }
+
+        /// <summary>
+        /// Raises the requested resolution dropdown value changed event.
+        /// </summary>
+        public void OnRequestedCascadeDropdownValueChanged(int result)
+        {
+            if ((int)requestedResolution != result)
+            {
+                requestedResolution = (ResolutionPreset)result;
+
+                int width, height;
+                Dimensions(requestedResolution, out width, out height);
+
+                webCamTextureToMatHelper.Initialize(width, height);
+            }
+        }
+
 
         /// <summary>
         /// Raises the container dropdown value changed event.
@@ -1137,13 +1028,73 @@ namespace OpenCVForUnityExample
         }
 
 
-        public void Init()
+        public void Init(string path, bool toggleEnable, string videoPath = "")
         {
 
-            string path = "";
-            bool toggleEnable = false;
+            switch (cascadeDropDown.value)
+            {
 
-            _videoPlayer = GetComponent<VideoPlayer>();
+                case 0:
+                    LBP_CASCADE_FILENAME = "haarcascade_eye_tree_eyeglasses.xml";
+                    break;
+                case 1:
+                    LBP_CASCADE_FILENAME = "haarcascade_eye.xml";
+                    break;
+                case 2:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalcatface_extended.xml";
+                    break;
+                case 3:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalcatface.xml";
+                    break;
+                case 4:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalface_alt_tree.xml";
+                    break;
+                case 5:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalface_alt.xml";
+                    break;
+                case 6:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalface_alt2.xml";
+                    break;
+                case 7:
+                    LBP_CASCADE_FILENAME = "haarcascade_frontalface_default.xml";
+                    break;
+                case 8:
+                    LBP_CASCADE_FILENAME = "haarcascade_fullbody.xml";
+                    break;
+                case 9:
+                    LBP_CASCADE_FILENAME = "haarcascade_lefteye_2splits.xml";
+                    break;
+                case 10:
+                    LBP_CASCADE_FILENAME = "haarcascade_licence_plate_rus_16stages.xml";
+                    break;
+                case 11:
+                    LBP_CASCADE_FILENAME = "haarcascade_lowerbody.xml";
+                    break;
+                case 12:
+                    LBP_CASCADE_FILENAME = "haarcascade_profileface.xml";
+                    break;
+                case 13:
+                    LBP_CASCADE_FILENAME = "haarcascade_righteye_2splits.xml";
+                    break;
+                case 14:
+                    LBP_CASCADE_FILENAME = "haarcascade_russian_plate_number.xml";
+                    break;
+                case 15:
+                    LBP_CASCADE_FILENAME = "haarcascade_smile.xml";
+                    break;
+                case 16:
+                    LBP_CASCADE_FILENAME = "haarcascade_upperbody.xml";
+                    break;
+                case 17:
+                    LBP_CASCADE_FILENAME = "lbpcascade_frontalface.xml";
+                    break;
+            }
+            Debug.Log("ReadCascade = " + cascadeDropDown.value + " : " + LBP_CASCADE_FILENAME);
+
+            _videoPlayer = videoPlayerObj.GetComponent<VideoPlayer>();
+
+            //_videoPlayer = GetComponent<VideoPlayer>();
+
             microphoneSource = GetComponent<AudioSource>();
             microphoneSource.playOnAwake = false;
 
@@ -1162,7 +1113,25 @@ namespace OpenCVForUnityExample
             else
             {
                 _videoPlayer.url = path;
+
+                var info = NativeGallery.GetVideoProperties(videoPath);
+                // // y軸を軸にして5度、x軸を軸にして5度、回転させるQuaternionを作成（変数をrotとする）
+                // Quaternion rot = Quaternion.Euler(0, -90, 0);
+                // // 現在の自信の回転の情報を取得する。
+                // Quaternion q = this.transform.rotation;
+                // // 合成して、自身に設定
+                // this.transform.rotation = q * rot;
+                Debug.Log("VideoInfo :  " + info);
+                Debug.Log("VideoInfo rotation:  " + info.rotation);
             }
+
+            // y軸を軸にして5度、x軸を軸にして5度、回転させるQuaternionを作成（変数をrotとする）
+            // Quaternion rot = Quaternion.Euler(0, 0, -90);
+            // // 現在の自信の回転の情報を取得する。
+            // Quaternion q = this.transform.rotation;
+
+            // this.transform.rotation = q * rot;
+
 
             _videoPlayer.errorReceived += ErrorReceived;
             _videoPlayer.prepareCompleted += PrepareCompleted;
@@ -1175,6 +1144,12 @@ namespace OpenCVForUnityExample
 
         public void VideoStart()
         {
+            if (savePathInputField.text != string.Empty)
+            {
+                trackingSize = float.Parse(savePathInputField.text.ToString());
+            }
+
+            Debug.Log("trackingSize = " + trackingSize);
             //_videoPlayer.time = 30;
             _videoPlayer.Play();
         }
@@ -1199,7 +1174,7 @@ namespace OpenCVForUnityExample
 
                 if (cascade != null)
                     cascade.detectMultiScale(grayMat, faces, 1.1, 2, 2, // TODO: objdetect.CV_HAAR_SCALE_IMAGE
-                        new Size(grayMat.cols() * 0.08, grayMat.rows() * 0.08), new Size());
+                        new Size(grayMat.cols() * trackingSize, grayMat.rows() * trackingSize), new Size());
 
 
                 OpenCVForUnity.CoreModule.Rect[] rects = faces.toArray();
@@ -1236,7 +1211,7 @@ namespace OpenCVForUnityExample
 
                 }
 
-                Imgproc.putText(rgbaMat, "W:" + rgbaMat.width() + " H:" + rgbaMat.height() + " SO:" + Screen.orientation, new Point(5, rgbaMat.rows() - 10), Imgproc.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
+                Imgproc.putText(rgbaMat, "W:" + rgbaMat.width() + " H:" + rgbaMat.height() + " SO:" + Screen.orientation + " : " + result, new Point(5, rgbaMat.rows() - 10), Imgproc.FONT_HERSHEY_SIMPLEX, 1.0, new Scalar(255, 255, 255, 255), 2, Imgproc.LINE_AA, false);
 
                 Utils.fastMatToTexture2D(rgbaMat, texture);
 
@@ -1305,10 +1280,10 @@ namespace OpenCVForUnityExample
 
         public Camera targetCamera;
 
-        void Start()
-        {
-            UpdateScale();
-        }
+        // void Start()
+        // {
+        //     UpdateScale();
+        // }
 
         [ContextMenu("execute")]
         void UpdateScale()
@@ -1327,25 +1302,49 @@ namespace OpenCVForUnityExample
             //     //Quadを画面いっぱいに広げる
             //     float _h = targetCamera.orthographicSize * 2;
             //     float _w = _h * targetCamera.aspect;
-            //     _w = _w / (480f / 640f);
+            //     //_w = _w / (480f / 640f);
+
+            //     if (Width < Height)
+            //     {
+            //         result = DeviceOrientation.Portrait;
+            //     }
+            //     else
+            //     {
+            //         result = DeviceOrientation.LandscapeLeft;
+            //     }
+
+
+            //     // if (result == DeviceOrientation.Unknown)
+            //     // {
+            //     //     if (Screen.width < Screen.height)
+            //     //     {
+            //     //         result = DeviceOrientation.Portrait;
+            //     //     }
+            //     //     else
+            //     //     {
+            //     //         result = DeviceOrientation.LandscapeLeft;
+            //     //     }
+            //     // }
+
+            //     Debug.Log("LLLLLL  " + result);
             //     //スマホ(Unity)が横ならそのまま
-            //     if (Input.deviceOrientation == DeviceOrientation.LandscapeLeft)
+            //     if (result == DeviceOrientation.LandscapeLeft)
             //     {
             //         transform.localScale = new Vector3(_w, _h, 1);
             //     }
             //     //縦なら回転させる
-            //     else if (Input.deviceOrientation == DeviceOrientation.Portrait)
+            //     else if (result == DeviceOrientation.Portrait)
             //     {
             //         transform.localScale = new Vector3(_h, _w, 1);
             //         transform.localRotation *= Quaternion.Euler(0, 0, -90);
-            //     }
-            //     else
-            //     {
-            //         transform.localScale = new Vector3(_h, _w, 1);
-            //         transform.localRotation *= Quaternion.Euler(0, 0, -90);
-
             //     }
             // }
         }
+
+        public void Quit()
+        {
+            Application.Quit();
+        }
+
     }
 }

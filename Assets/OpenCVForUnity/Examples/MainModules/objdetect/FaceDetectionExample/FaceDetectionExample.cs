@@ -24,14 +24,14 @@ namespace OpenCVForUnityExample
         /// </summary>
         protected static readonly string HAAR_CASCADE_FILENAME = "haarcascade_frontalface_alt.xml";
 
-        #if UNITY_WEBGL
+#if UNITY_WEBGL
         IEnumerator getFilePath_Coroutine;
-        #endif
+#endif
 
         // Use this for initialization
-        void Start ()
+        void Start()
         {
-            #if UNITY_WEBGL
+#if UNITY_WEBGL
             getFilePath_Coroutine = Utils.getFilePathAsync (HAAR_CASCADE_FILENAME, 
                 (result) => {
                     getFilePath_Coroutine = null;
@@ -48,55 +48,57 @@ namespace OpenCVForUnityExample
                     Debug.Log ("getFilePathAsync() progress : " + result + " " + Mathf.CeilToInt (progress * 100) + "%");
                 });
             StartCoroutine (getFilePath_Coroutine);
-            #else
+#else
             //cascade = new CascadeClassifier (Utils.getFilePath ("lbpcascade_frontalface.xml"));
-            cascade = new CascadeClassifier ();
-            cascade.load (Utils.getFilePath (HAAR_CASCADE_FILENAME));
-            if (cascade.empty ()) {
-                Debug.LogError ("cascade file is not loaded. Please copy from “OpenCVForUnity/StreamingAssets/” to “Assets/StreamingAssets/” folder. ");
+            cascade = new CascadeClassifier();
+            cascade.load(Utils.getFilePath(HAAR_CASCADE_FILENAME));
+            if (cascade.empty())
+            {
+                Debug.LogError("cascade file is not loaded. Please copy from “OpenCVForUnity/StreamingAssets/” to “Assets/StreamingAssets/” folder. ");
             }
-            Run ();
-            #endif
+            Run();
+#endif
         }
 
-        private void Run ()
+        private void Run()
         {
-            Texture2D imgTexture = Resources.Load ("face") as Texture2D;
+            Texture2D imgTexture = Resources.Load("face") as Texture2D;
 
-            Mat imgMat = new Mat (imgTexture.height, imgTexture.width, CvType.CV_8UC4);
+            Mat imgMat = new Mat(imgTexture.height, imgTexture.width, CvType.CV_8UC4);
 
-            Utils.texture2DToMat (imgTexture, imgMat);
-            Debug.Log ("imgMat.ToString() " + imgMat.ToString ());
-
-
-            Mat grayMat = new Mat ();
-            Imgproc.cvtColor (imgMat, grayMat, Imgproc.COLOR_RGBA2GRAY);
-            Imgproc.equalizeHist (grayMat, grayMat);
+            Utils.texture2DToMat(imgTexture, imgMat);
+            Debug.Log("imgMat.ToString() " + imgMat.ToString());
 
 
-            MatOfRect faces = new MatOfRect ();
+            Mat grayMat = new Mat();
+            Imgproc.cvtColor(imgMat, grayMat, Imgproc.COLOR_RGBA2GRAY);
+            Imgproc.equalizeHist(grayMat, grayMat);
+
+
+            MatOfRect faces = new MatOfRect();
 
             if (cascade != null)
-                cascade.detectMultiScale (grayMat, faces, 1.1, 2, 2, 
-                    new Size (20, 20), new Size ());
+                cascade.detectMultiScale(grayMat, faces, 1.1, 2, 2,
+                    new Size(1, 1), new Size());
 
-            OpenCVForUnity.CoreModule.Rect[] rects = faces.toArray ();
-            for (int i = 0; i < rects.Length; i++) {
-                Debug.Log ("detect faces " + rects [i]);
+            OpenCVForUnity.CoreModule.Rect[] rects = faces.toArray();
+            for (int i = 0; i < rects.Length; i++)
+            {
+                Debug.Log("detect faces " + rects[i]);
 
-                Imgproc.rectangle (imgMat, new Point (rects [i].x, rects [i].y), new Point (rects [i].x + rects [i].width, rects [i].y + rects [i].height), new Scalar (255, 0, 0, 255), 2);
+                Imgproc.rectangle(imgMat, new Point(rects[i].x, rects[i].y), new Point(rects[i].x + rects[i].width, rects[i].y + rects[i].height), new Scalar(255, 0, 0, 255), 2);
             }
 
 
-            Texture2D texture = new Texture2D (imgMat.cols (), imgMat.rows (), TextureFormat.RGBA32, false);
+            Texture2D texture = new Texture2D(imgMat.cols(), imgMat.rows(), TextureFormat.RGBA32, false);
 
-            Utils.matToTexture2D (imgMat, texture);
+            Utils.matToTexture2D(imgMat, texture);
 
-            gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
+            gameObject.GetComponent<Renderer>().material.mainTexture = texture;
         }
 
         // Update is called once per frame
-        void Update ()
+        void Update()
         {
 
         }
@@ -104,22 +106,22 @@ namespace OpenCVForUnityExample
         /// <summary>
         /// Raises the destroy event.
         /// </summary>
-        void OnDestroy ()
+        void OnDestroy()
         {
-            #if UNITY_WEBGL
+#if UNITY_WEBGL
             if (getFilePath_Coroutine != null) {
                 StopCoroutine (getFilePath_Coroutine);
                 ((IDisposable)getFilePath_Coroutine).Dispose ();
             }
-            #endif
+#endif
         }
 
         /// <summary>
         /// Raises the back button click event.
         /// </summary>
-        public void OnBackButtonClick ()
+        public void OnBackButtonClick()
         {
-            SceneManager.LoadScene ("OpenCVForUnityExample");
+            SceneManager.LoadScene("OpenCVForUnityExample");
         }
     }
 }
